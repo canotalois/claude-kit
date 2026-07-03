@@ -1,0 +1,11 @@
+{
+  "name": "claude-kit",
+  "owner": { "name": "Alois Canot" },
+  "plugins": [
+    {
+      "name": "claude-kit",
+      "source": "./",
+      "description": "Conventions, an AI-tell hook, and review/ship/doc-check skills."
+    }
+  ]
+}
