@@ -9,7 +9,7 @@ Output a short, strict checklist of blockers against `GUIDELINES.md`. Not an ess
 
 ## Steps
 
-1. Read `GUIDELINES.md` from the repo root. It is the source of truth. If absent, stop and say so.
+1. Read `GUIDELINES.md` from the repo root, plus `guidelines/core.md` if it exists (the universal spine the root file may build on). Together they are the source of truth. If no `GUIDELINES.md` exists, stop and say so.
 2. Branch name: `git rev-parse --abbrev-ref HEAD`. Changed files: `git diff --name-only main...HEAD` (use `origin/main` if `main` is stale). On `main`, diff staged plus unstaged against HEAD.
 3. Read each changed file in full, not just the patch. Context decides whether a `??` is a real default or a contract band-aid.
 4. Every "Don't" line in `GUIDELINES.md` is a blocker. No tiers.

@@ -1,44 +1,62 @@
 # claude-kit
 
-My Claude Code setup: conventions, a hook, and slash commands that make every project faster and more consistent. Install once, get the same standards everywhere, grow it over time.
+My Claude Code setup: a language-agnostic trunk (conventions, a hook, skills) plus per-language stacks you branch from to start anything. Install once, get the same standards everywhere, add a stack when you pick up a new language.
 
-## What is in here
+## The shape
 
-- `CLAUDE.md`: global conventions loaded in every project (writing style, code rules, UX principles, git hygiene).
-- `hooks/`: a `PostToolUse` hook that blocks AI-tells (em-dash, en-dash, middot) and emojis the moment a file is written or edited.
-- `skills/`: slash commands.
-  - `/review`: strict check of the current branch against the project's `GUIDELINES.md`.
-  - `/ship`: typecheck, scan for AI-tells, commit with the co-author trailer, and push, in one command.
-  - `/doc-check`: scan every markdown file for AI-tells and broken links, and list docs not covered.
-- `templates/nextjs-monorepo/`: a starter (GUIDELINES, strict tsconfig, CI, gitignore, README) to clone into a new project.
+```
+claude-kit/
+  CLAUDE.md            # universal behavior, loaded in every project (any language)
+  guidelines/core.md   # the universal "don't" list /review enforces
+  hooks/               # a PostToolUse hook that blocks emojis and AI-tells on write
+  skills/              # /review, /ship, /doc-check, /kickoff
+  stacks/
+    node-web/          # TypeScript overlay + strict tsconfig, CI, gitignore
+    rust/              # Rust overlay + workspace lints, CI, gitignore
+```
+
+Two layers, on purpose:
+
+- **Trunk (universal).** `CLAUDE.md`, `guidelines/core.md`, the hook and the skills apply to any language. "No AI-tells, validate at the boundary, throw early, don't reinvent, typed errors, no mid-code comments, atomic commits" hold in Rust as much as in TypeScript.
+- **Stacks (per language).** Each `stacks/<name>/` is a thin overlay: a `GUIDELINES.md` that adds the language's idioms on top of the core, plus its starter config (tsconfig / Cargo, CI, gitignore). Adding a language is one new folder, nothing else moves.
+
+A guideline is written once in the spine and only its *expression* changes per stack:
+
+| Core principle | node-web | rust |
+|---|---|---|
+| Validate at the boundary | zod, then narrow | `serde` into typed structs |
+| Throw early, no stacked fallbacks | no `?? ??` masking | `?`, no `unwrap_or` papering over |
+| One typed error per domain | discriminated union `code` | `enum` + `thiserror` |
+| Strict by default | `strict`, `noUncheckedIndexedAccess` | `clippy::pedantic`, `-D warnings` |
 
 ## Install
 
-Conventions, loaded in all projects:
+Universal conventions, in every project:
 
 ```bash
-ln -sf "$PWD/CLAUDE.md" ~/.claude/CLAUDE.md
+./install.sh   # symlinks CLAUDE.md into ~/.claude and prints the hook config
 ```
 
-Convenience installer (symlinks the convention file and prints the hook config to paste):
-
-```bash
-./install.sh
-```
-
-As a plugin (skills and hook, versioned, in the projects you choose):
+As a plugin (skills and hook, versioned):
 
 ```bash
 /plugin marketplace add github:canotalois/claude-kit
 /plugin install claude-kit@claude-kit
 ```
 
-## New project from the template
+## Start a new project
 
 ```bash
-npx degit canotalois/claude-kit/templates/nextjs-monorepo my-app
+/kickoff rust my-app       # scaffolds the stack and a self-contained GUIDELINES.md
+/kickoff node-web my-app
+```
+
+Or pull a stack directly:
+
+```bash
+npx degit canotalois/claude-kit/stacks/node-web my-app
 ```
 
 ## Why
 
-Repetitive manual checks (no em-dash, no filler, no broken links, no forgotten files) are slow and easy to miss. This moves them into a hook and a few skills, so they run every time, automatically.
+Repetitive manual checks (no em-dash, no filler, no broken links, no forgotten files) are slow and easy to miss. This moves them into a hook and a few skills that run every time, and keeps one set of standards across every language instead of re-deciding them per project.

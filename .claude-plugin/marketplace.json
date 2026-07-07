@@ -5,7 +5,7 @@
     {
       "name": "claude-kit",
       "source": "./",
-      "description": "Conventions, an AI-tell hook, and review/ship/doc-check skills."
+      "description": "Language-agnostic conventions, an AI-tell hook, review/ship/doc-check/kickoff skills, and per-language stacks."
     }
   ]
 }

@@ -12,7 +12,7 @@ A pnpm workspace preset for a strict TypeScript monorepo, wired to the claude-ki
 ## Use it
 
 ```bash
-npx degit canotalois/claude-kit/templates/nextjs-monorepo my-app
+npx degit canotalois/claude-kit/stacks/node-web my-app
 cd my-app
 ```
 

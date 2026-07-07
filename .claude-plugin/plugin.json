@@ -1,6 +1,6 @@
 {
   "name": "claude-kit",
-  "description": "Personal Claude Code setup: conventions, an AI-tell hook, and review/ship/doc-check skills.",
+  "description": "Personal Claude Code setup: language-agnostic conventions, an AI-tell hook, review/ship/doc-check/kickoff skills, and per-language stacks.",
   "version": "0.1.0",
   "author": { "name": "Alois Canot" },
   "homepage": "https://github.com/canotalois/claude-kit",

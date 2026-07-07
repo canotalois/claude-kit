@@ -1,0 +1,14 @@
+# build
+/target/
+**/*.rs.bk
+
+# env and secrets
+.env
+.env.*
+!.env.example
+
+# editor and OS
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
