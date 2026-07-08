@@ -32,20 +32,36 @@ A guideline is written once in the spine and only its *expression* changes per s
 | One typed error per domain | discriminated union `code` | `enum` + `thiserror` |
 | Strict by default | `strict`, `noUncheckedIndexedAccess` | `clippy::pedantic`, `-D warnings` |
 
+## Three pieces, three roles
+
+If you are new to Claude Code, this is the whole vocabulary:
+
+| | What it is | When it fires | Here |
+|---|---|---|---|
+| **Hook** | a script Claude Code runs automatically on an event | every time, deterministic | block `rm -rf /`, strip AI-tells on write |
+| **Skill** | a procedure you invoke with `/name` | when called | `/review`, `/ship`, `/kickoff` |
+| **Agent** | a specialized sub-Claude with its own context | when delegated a task | `reviewer`, `ux-auditor` |
+
+A hook is a reflex, a skill is a command, an agent is a colleague.
+
 ## Install
 
-Universal conventions, in every project:
+**macOS / Linux, one line** (clones the kit, symlinks the conventions, and offers to merge the hooks and balanced permissions into `~/.claude`, with a backup). Read it first if you like: swap `| bash` for `| less`.
 
 ```bash
-./install.sh   # symlinks CLAUDE.md into ~/.claude and prints the hook config
+curl -fsSL https://raw.githubusercontent.com/canotalois/claude-kit/main/bootstrap.sh | bash
 ```
 
-As a plugin (skills and hook, versioned):
+**Any OS, inside Claude Code** (no terminal needed; installs the skills, hooks, and agents). This is also the Windows path.
 
-```bash
+```
 /plugin marketplace add github:canotalois/claude-kit
 /plugin install claude-kit@claude-kit
 ```
+
+The plugin ships the hooks, skills, and agents. It cannot ship the universal `CLAUDE.md` conventions or the permission posture (those live in settings), so add them from `settings/autopilot.json` (see `settings/README.md`) or use the one-line installer above.
+
+**Not a developer?** Install Claude Code (claude.com/claude-code), open it in any folder, and paste the two `/plugin` lines above. That is it, you now have the hooks and skills.
 
 ## Start a new project
 

@@ -13,7 +13,12 @@ echo "Linked ~/.claude/CLAUDE.md -> $KIT/CLAUDE.md"
 # 2. Merge the balanced autopilot permissions and the two hooks into user
 #    settings, keeping a timestamped backup. Opt-in.
 echo
-read -r -p "Merge autopilot permissions + hooks into ~/.claude/settings.json? [y/N] " reply
+# Read from the terminal even when this script arrives over a pipe (curl | bash);
+# with no usable terminal (CI), default to not touching the user's settings.
+reply="n"
+if { : </dev/tty; } 2>/dev/null; then
+  read -r -p "Merge autopilot permissions + hooks into ~/.claude/settings.json? [y/N] " reply </dev/tty || reply="n"
+fi
 if [[ "$reply" =~ ^[Yy]$ ]]; then
   KIT="$KIT" SETTINGS="$SETTINGS" python3 - <<'PY'
 import json, os, shutil, time
