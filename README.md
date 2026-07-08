@@ -1,6 +1,8 @@
 # claude-kit
 
-My Claude Code setup: a language-agnostic trunk (conventions, a hook, skills) plus per-language stacks you branch from to start anything. Install once, get the same standards everywhere, add a stack when you pick up a new language.
+> Beta. I use it daily and it works, but the structure may still shift and there are rough edges. Feedback and issues welcome.
+
+My Claude Code setup: a language-agnostic trunk (conventions, a hook, skills) plus per-language stacks you start from for anything. Install once, get the same standards everywhere, add a stack when you pick up a new language.
 
 ## The shape
 
