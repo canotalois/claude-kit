@@ -50,10 +50,10 @@ Overlay on `guidelines/core.md`. The core spine (contracts, nullish, errors, com
 - Never crash on malformed input: parsers return NaN/null, a root ErrorBoundary catches the rest.
 - Mobile is not optional. Tap targets >= 44px on touch, no horizontal overflow, inputs >= 16px to avoid iOS zoom, tap-reachable equivalents for anything hover-only.
 
-## Tests
+## Test tooling
 
 - Do use Vitest plus MSW for the network, memory adapters otherwise.
 
-## Commits and hygiene
+## Pull requests
 
 - Do write a PR description with scope, test plan, and screenshots for UI.

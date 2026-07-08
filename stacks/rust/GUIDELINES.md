@@ -35,6 +35,6 @@ Overlay on `guidelines/core.md`. The core spine (contracts, nullish, errors, com
 
 - Do write `///` doc comments above public items when the why is not obvious. No mid-function narration.
 
-## Tests
+## Test layout
 
 - Do put unit tests in `#[cfg(test)] mod tests` and cross-crate tests in `tests/`. Cover the error variants, not just `Ok`.
