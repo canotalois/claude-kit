@@ -1,28 +1,21 @@
 #!/usr/bin/env python3
-"""PostToolUse hook: block AI-tells in files that were just written or edited.
-
-Reads the tool payload as JSON on stdin, looks at the written file, and exits 2
-with a report if it finds an em-dash, en-dash, figure-dash, horizontal bar,
-middot, bullet, or a pictographic emoji. Exit 2 surfaces the report back to the
-model so it fixes it.
-
-Forbidden characters are built with chr() from their code points, so this source
-file stays pure ASCII and never trips its own check.
+"""PostToolUse hook: exit 2 (which surfaces a report to the model) if a
+just-written file contains an AI-tell, an em-dash family character, middot,
+bullet, or a pictographic emoji. The forbidden characters are built with chr()
+so this source stays pure ASCII and never trips its own check.
 """
 import json
 import os
 import sys
 
-# Extensions worth checking.
 EXTS = {
     ".md", ".mdx", ".markdown", ".txt", ".ts", ".tsx", ".js", ".jsx",
     ".css", ".scss", ".json", ".yml", ".yaml", ".html", ".vue",
 }
 
-# Basenames allowed to contain emojis (e.g. a showcase README). Empty by default.
+# Basenames exempt from the emoji rule (e.g. a showcase README).
 ALLOW_EMOJI = set()
 
-# Hard blockers: punctuation that reads as an AI-tell, by code point.
 HARD = {
     chr(0x2014): "em-dash",
     chr(0x2013): "en-dash",
@@ -34,8 +27,8 @@ HARD = {
 
 
 def is_emoji(ch):
-    """Pictographic emojis and regional flags, plus the emoji variation selector.
-    Scoped to avoid arrows, check marks, or the circled-i tooltip glyph."""
+    """Pictographic emojis and flags only, scoped to spare arrows, check marks,
+    and the circled-i tooltip glyph."""
     o = ord(ch)
     return (0x1F000 <= o <= 0x1FAFF) or (0x1F1E6 <= o <= 0x1F1FF) or o == 0xFE0F
 

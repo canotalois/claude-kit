@@ -8,8 +8,11 @@ My Claude Code setup: a language-agnostic trunk (conventions, a hook, skills) pl
 claude-kit/
   CLAUDE.md            # universal behavior, loaded in every project (any language)
   guidelines/core.md   # the universal "don't" list /review enforces
-  hooks/               # a PostToolUse hook that blocks emojis and AI-tells on write
+  hooks/               # PostToolUse AI-tell blocker + PreToolUse destructive-command guard
   skills/              # /review, /ship, /doc-check, /kickoff
+  agents/              # reusable subagents: reviewer, ux-auditor, researcher
+  settings/            # a balanced permission posture (autopilot.json) + the safety model
+  autopilot/           # a /loop maintenance task and scheduled-routine recipes
   stacks/
     node-web/          # TypeScript overlay + strict tsconfig, CI, gitignore
     rust/              # Rust overlay + workspace lints, CI, gitignore
@@ -57,6 +60,14 @@ Or pull a stack directly:
 npx degit canotalois/claude-kit/stacks/node-web my-app
 ```
 
+## Autopilot
+
+The point is to delegate the routine and be asked only about genuine decisions. The lever is permissions, not skills. `settings/autopilot.json` is a balanced posture: reads, edits in source trees, and the test/typecheck/lint/build/commit commands auto-run; `git push`, dependency installs, and `curl` prompt; secrets and `sudo` are denied. `rm -rf` and force-push are not blunt-denied; the `PreToolUse` guard (`hooks/gate-destructive.py`) blocks only the catastrophic cases (`rm -rf /`, `~`, `$HOME`, absolute paths, force-push to main) so `rm -rf node_modules` still works.
+
+- **Delegate task classes** to the subagents in `agents/` (reviewer against the guidelines, ux-auditor, researcher) to keep the main context clean.
+- **Recurring work**: `autopilot/loop.md` for a local `/loop` maintenance pass, `autopilot/routines.md` for scheduled cloud routines (daily PR triage, dependency bumps) that open a PR instead of pushing.
+- The safety model is written up in `settings/README.md`. Not for use with `--dangerously-skip-permissions`.
+
 ## Why
 
-Repetitive manual checks (no em-dash, no filler, no broken links, no forgotten files) are slow and easy to miss. This moves them into a hook and a few skills that run every time, and keeps one set of standards across every language instead of re-deciding them per project.
+Repetitive manual checks (no em-dash, no filler, no broken links, no forgotten files) are slow and easy to miss. This moves them into hooks and a few skills that run every time, keeps one set of standards across every language, and auto-approves the routine so a human is pulled in only for the irreversible and the outbound.
