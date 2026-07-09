@@ -48,31 +48,30 @@ A hook is a reflex, a skill is a command, an agent is a colleague.
 
 ## Install
 
-**macOS / Linux, one line** (clones the kit, symlinks the conventions, and offers to merge the hooks and balanced permissions into `~/.claude`, with a backup). Read it first if you like: swap `| bash` for `| less`.
+Two parts, because Claude Code splits them: the **plugin** carries the tools (skills, agents, hooks); the **installer** carries the conventions and the permission posture (those live in settings, a plugin cannot ship them). Run both for the full kit.
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/canotalois/claude-kit/main/bootstrap.sh | bash
-```
-
-**Any OS, inside Claude Code** (no terminal needed; installs the skills, hooks, and agents). This is also the Windows path.
+Plugin, any OS, inside Claude Code (also the Windows and non-developer path):
 
 ```
 /plugin marketplace add github:canotalois/claude-kit
 /plugin install claude-kit@claude-kit
 ```
 
-The plugin ships the hooks, skills, and agents. It cannot ship the universal `CLAUDE.md` conventions or the permission posture (those live in settings), so add them from `settings/autopilot.json` (see `settings/README.md`) or use the one-line installer above.
+Conventions and permissions, macOS / Linux (clones the kit, symlinks `CLAUDE.md`, merges the hooks and balanced permissions into `~/.claude` with a backup). Read it first with `| less`:
 
-**Not a developer?** Install Claude Code (claude.com/claude-code), open it in any folder, and paste the two `/plugin` lines above. That is it, you now have the hooks and skills.
+```bash
+curl -fsSL https://raw.githubusercontent.com/canotalois/claude-kit/main/bootstrap.sh | bash
+```
 
 ## Start a new project
 
+`/kickoff` is a plugin skill, so install the plugin first (above).
+
 ```bash
-/kickoff rust my-app       # scaffolds the stack and a self-contained GUIDELINES.md
-/kickoff node-web my-app
+/kickoff node-web my-app   # scaffolds the stack and a self-contained GUIDELINES.md
 ```
 
-Or pull a stack directly:
+No plugin? Pull a stack directly and compose its `GUIDELINES.md` yourself:
 
 ```bash
 npx degit canotalois/claude-kit/stacks/node-web my-app
