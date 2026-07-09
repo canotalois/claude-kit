@@ -22,6 +22,10 @@ Settings merge by scope: user (`~/.claude/settings.json`) < project (`.claude/se
 
 `install.sh` merges `autopilot.json` into `~/.claude/settings.json` (with a timestamped backup) after asking. To do it by hand, copy the `permissions` block into your settings and adjust the globs to your stack.
 
-## Not for headless
+## Unattended variant
 
-This posture assumes an interactive session where `ask` can prompt you. Do not pair it with `--dangerously-skip-permissions` or `defaultMode: bypassPermissions`; those turn every `ask` into a silent yes. Keep the bypass for isolated CI containers only.
+`autopilot.json` assumes you are there to answer an `ask`. For a run with nobody at the keyboard (an overnight session), use `unattended.json` instead: it has **no `ask` list** (everything is `allow` or `deny`, and a `deny` never halts the run, Claude just works around it), denies `git push` and arbitrary network on top of the usual secrets/`sudo`, and sets `askUserQuestionTimeout` so any residual prompt auto-continues instead of hanging. See `autopilot/overnight.md` for how to launch one.
+
+## Not for `--dangerously-skip-permissions`
+
+Neither posture should be paired with `--dangerously-skip-permissions` or `defaultMode: bypassPermissions`; those turn every rule into a silent yes. Keep the bypass for isolated CI containers only.

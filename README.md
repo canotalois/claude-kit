@@ -85,6 +85,20 @@ The point is to delegate the routine and be asked only about genuine decisions. 
 - **Recurring work**: `autopilot/loop.md` for a local `/loop` maintenance pass, `autopilot/routines.md` for scheduled cloud routines (daily PR triage, dependency bumps) that open a PR instead of pushing.
 - The safety model is written up in `settings/README.md`. Not for use with `--dangerously-skip-permissions`.
 
+## While you sleep
+
+The payoff of the autopilot layer: launch work before bed, review it with coffee. Two ways.
+
+**Local**, on your machine. Switch to the unattended posture (`settings/unattended.json`: no `ask`, `git push` denied, `askUserQuestionTimeout` set so nothing hangs), turn on auto mode, work on a `claude/overnight` branch, and set a verifiable goal:
+
+```
+/goal every task in TODO.md is done with passing tests, and typecheck + test are green
+```
+
+It works through the list, commits each task, and logs anything it could not do to `NEEDS-REVIEW.md` instead of waiting. You wake up to a branch to review. Full recipe in `autopilot/overnight.md`.
+
+**Cloud**, laptop closed. A scheduled routine runs on Anthropic's infrastructure and opens a pull request. Example, nightly: "take the top item in `BACKLOG.md`, implement it on a `claude/` branch with tests, open a draft PR." You wake up to draft PRs. See `autopilot/routines.md` (needs Pro/Max/Team/Enterprise with Claude Code on the web).
+
 ## Why
 
 Repetitive manual checks (no em-dash, no filler, no broken links, no forgotten files) are slow and easy to miss. This moves them into hooks and a few skills that run every time, keeps one set of standards across every language, and auto-approves the routine so a human is pulled in only for the irreversible and the outbound.

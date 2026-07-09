@@ -1,39 +1,34 @@
 # Scheduled cloud routines
 
-Routines are Claude Code sessions that run on Anthropic's infrastructure on a schedule or a trigger (cron, an API call, a GitHub event), with no one at the keyboard. Create one with `/schedule` or at claude.ai/code/routines. Because no human is there to answer a prompt, a routine must be self-contained and should only do reversible work, or open a PR for a human to merge.
+A routine is a saved Claude Code config (a prompt, one or more repos, connectors) that runs on Anthropic's cloud, so it works with your laptop closed. There are no permission prompts during a run: what it can reach is set by the repos you pick, their branch-push setting, the environment's network access, and the connectors you include. It clones each repo from the default branch and works on `claude/`-prefixed branches; you review the run and open a PR from it.
 
-## Setup checklist
+Requires Pro / Max / Team / Enterprise with Claude Code on the web (research preview). Create one with `/schedule` in the CLI (scheduled triggers) or at claude.ai/code/routines (also for API and GitHub triggers).
 
-- **Prompt**: fully self-contained (the routine has no memory of your chats). State the repo, the goal, and the exact output.
-- **Repository**: the routine clones it and works on a `claude/*` branch by default. Keep it to opening a PR, not pushing to `main`.
-- **Trigger**: a cron schedule (daily, weekly), an API endpoint, or GitHub events (new PR, release) with filters.
-- **Guardrails**: the balanced posture does not apply in the cloud (nobody to prompt), so scope the prompt tightly and never ask it to deploy or delete.
+## Triggers
 
-## Example: daily PR triage
+- **Scheduled**: recurring (hourly minimum, or nightly/weekly) or a one-off at a set time.
+- **API**: POST to the routine's `/fire` endpoint with a bearer token, with optional `text` context (an alert body, a failing log). For alerting and deploy pipelines.
+- **GitHub**: on `pull_request` or `release` events, with filters (author, base/head branch, labels, draft, merged).
 
-Trigger: every weekday at 09:00. Prompt:
+Because it runs unattended, the prompt must be self-contained and should only do reversible work or open a PR. Scope the environment and connectors to what it actually needs.
 
-```
-Review every open pull request in this repository that has changed since
-yesterday.
+## Example: nightly backlog worker
 
-For each one:
-- Read the diff in full and check it against GUIDELINES.md and guidelines/core.md.
-- Post a single review comment: a short blocker checklist (path:line | problem),
-  or "LGTM" if clean.
-- Do not approve, merge, close, or push anything. Comment only.
-
-At the end, post one summary comment on the newest PR listing which PRs you
-reviewed and how many blockers each had.
-```
-
-## Example: dependency freshness
-
-Trigger: Monday 08:00. Prompt:
+Scheduled, every weeknight. Prompt:
 
 ```
-Check this repo's direct dependencies for outdated versions. For any minor or
-patch update, open one PR on a claude/deps branch that bumps them and runs the
-test suite. Do not bump majors; list those in the PR body for a human to decide.
-Never touch the lockfile for a major version. One PR, reversible.
+Take the top unchecked item in BACKLOG.md. Implement it on a claude/ branch
+with tests, run `pnpm -r typecheck && pnpm -r test`, and open a draft PR that
+links the backlog item. If it is too ambiguous to build, open a draft PR with a
+short "needs decision" note instead. One item per run, never touch main.
+```
+
+## Example: bespoke PR review
+
+GitHub trigger on `pull_request.opened`, filter `is draft = false`. Prompt:
+
+```
+Review this pull request against GUIDELINES.md and guidelines/core.md. Leave
+inline comments for real blockers (path:line | problem), and one summary comment.
+Do not approve, merge, or push. Comment only.
 ```
