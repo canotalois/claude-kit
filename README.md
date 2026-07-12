@@ -16,7 +16,8 @@ claude-kit/
   settings/            # a balanced permission posture (autopilot.json) + the safety model
   autopilot/           # a /loop maintenance task and scheduled-routine recipes
   stacks/
-    node-web/          # TypeScript overlay + strict tsconfig, CI, gitignore
+    node-web/          # TypeScript frontend overlay + strict tsconfig, CI, gitignore
+    node-service/      # TypeScript backend overlay (API, workers, jobs)
     rust/              # Rust overlay + workspace lints, CI, gitignore
 ```
 
