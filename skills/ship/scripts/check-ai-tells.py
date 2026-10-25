@@ -1,0 +1,1 @@
+../../../hooks/check-ai-tells.py
