@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  hooks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Hook tests
+        run: python3 -m unittest discover -s hooks/tests -v
+      - name: Installer
+        run: shellcheck install.sh
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: AI-tells
+        run: git ls-files -z '*.md' '*.py' '*.json' '*.yml' '*.toml' '*.mjs' '*.ts' '*.tsx' '*.rs' | xargs -0 python3 hooks/check-ai-tells.py
+      - name: Internal links
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: --offline --include-fragments --no-progress --exclude-path skills/rules-review/rules './**/*.md'
+          fail: true
+
+  stack-node:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        stack: [node-web, node-service]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Assemble the stack with its fixture
+        run: |
+          mkdir -p "$RUNNER_TEMP/app"
+          cp -R "stacks/${{ matrix.stack }}/." "$RUNNER_TEMP/app/"
+          cp -R "tests/stacks/${{ matrix.stack }}/." "$RUNNER_TEMP/app/"
+      - name: Install
+        working-directory: ${{ runner.temp }}/app
+        run: |
+          pnpm install
+          if [ "${{ matrix.stack }}" = node-web ]; then pnpm add -w next react react-dom @types/react; fi
+      - name: Typecheck
+        working-directory: ${{ runner.temp }}/app
+        run: pnpm exec tsc -p tsconfig.json --noEmit
+      - name: Lint
+        working-directory: ${{ runner.temp }}/app
+        run: pnpm exec eslint . --max-warnings=0
+      - name: Test
+        if: matrix.stack == 'node-service'
+        working-directory: ${{ runner.temp }}/app
+        run: pnpm test
+
+  stack-rust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: Assemble the stack with its fixture
+        run: |
+          mkdir -p "$RUNNER_TEMP/app"
+          cp -R stacks/rust/. "$RUNNER_TEMP/app/"
+          cp -R tests/stacks/rust/. "$RUNNER_TEMP/app/"
+      - name: Lint and test
+        working-directory: ${{ runner.temp }}/app
+        run: |
+          cargo fmt --all
+          cargo clippy --workspace --all-targets -- -D warnings
+          cargo test --workspace

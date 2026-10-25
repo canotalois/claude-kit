@@ -1,27 +1,27 @@
 ---
 name: ship
-description: Typecheck, scan changed files for AI-tells, commit with the co-author trailer, and push, in one command. Invoke with an optional commit message, e.g. "/ship fix the chart legend".
-argument-hint: "<commit message>"
+description: Run the project's quality gate, scan the changed files for AI-tells, commit the change atomically with the co-author trailer, and push the branch. Invoke as "/ship [commit message]" when a change is finished and the user wants it committed and pushed.
+argument-hint: "[commit message]"
 ---
 
 # ship
 
-Run the quality gate, then commit and push. Stop and report on the first failure. Do not push broken code or code with AI-tells.
+Gate, commit, push. Stop at the first failure and show its output. Never push code that fails the gate.
 
 ## Steps
 
-1. If nothing is staged or changed, say so and stop.
-2. Detect the toolchain from the repo and run its gate, stop on failure and print the output:
-   - `pnpm-lock.yaml` / `package.json`: `pnpm -r typecheck` (or `typecheck` / `tsc --noEmit`), then `pnpm -r test` if a test script exists.
+1. Nothing changed (`git status --porcelain` empty): say so and stop. On the default branch: stop and ask for a branch name, unless the user said to push there.
+2. Run the gate the project itself uses. Read it from CI first (`.github/workflows/*`, `.gitlab-ci.yml`), then from the manifests:
+   - `package.json`: its `typecheck`, `lint`, and `test` scripts, through the package manager the lockfile names.
    - `Cargo.toml`: `cargo fmt --all --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace`.
-   - `pyproject.toml` / `uv.lock`: the project's typecheck (`mypy` / `pyright`) and `pytest`.
-   - Fall back to whatever the project's CI runs.
-3. Scan changed files (`git diff --name-only HEAD` plus untracked) for AI-tells: em-dash, en-dash, middot, emojis. If any, list them and stop so they get fixed.
-4. Stage everything (`git add -A`), commit with the user's message (or a concise message inferred from the diff), and append the AI co-author trailer.
-5. Push the current branch. Report the short SHA and the branch.
+   - `pyproject.toml`: the configured type checker, then `pytest`.
+3. Scan the changed and untracked text files: `python3 scripts/check-ai-tells.py <files>` from this skill's directory. A hit stops the run until fixed.
+4. Group the changes. One logical change is one commit: when the diff mixes unrelated changes, propose the split and stage each group by path (`git add <paths>`), never `git add -A` over unrelated work.
+5. Commit with the user's message, or one written from the diff: imperative subject under 72 characters, a body only when the why is not obvious, then the AI co-author trailer.
+6. Push the current branch (`git push -u origin HEAD` the first time). Report the short SHA of each commit and the branch.
 
 ## Rules
 
-- Never use `--no-verify` or `--no-gpg-sign`.
-- One logical change per commit. If the diff mixes unrelated changes, warn before committing.
-- No emojis or AI-tells in the commit message.
+- Never `--no-verify`, `--no-gpg-sign`, or a force push. A failing pre-commit hook is fixed, not bypassed.
+- No emoji or AI-tells in commit messages.
+- Do not fix gate failures silently inside the ship run: report them, then fix as a separate step the user sees.

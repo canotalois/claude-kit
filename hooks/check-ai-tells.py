@@ -1,22 +1,27 @@
 #!/usr/bin/env python3
-"""PostToolUse hook: exit 2 (which surfaces a report to the model) if a
-just-written file contains an AI-tell, an em-dash family character, middot,
-bullet, or a pictographic emoji. The forbidden characters are built with chr()
-so this source stays pure ASCII and never trips its own check.
+"""PostToolUse check for AI-tells in the file Claude just wrote with Write or
+Edit (`tool_input.file_path`).
+
+Exit 2 does not undo the write: it feeds the report back so the agent fixes
+it. Flags em-dash family characters, middot, bullet, and pictographic emoji.
+The forbidden characters are built with chr() so this source stays ASCII and
+never trips its own check. A payload it cannot read passes silently: a
+post-write linter must never break the agent loop.
+
+Also a CLI for skills and CI: `check-ai-tells.py FILE...` exits 1 on a hit.
 """
 import json
 import os
 import sys
 
 EXTS = {
-    ".md", ".mdx", ".markdown", ".txt", ".ts", ".tsx", ".js", ".jsx",
-    ".css", ".scss", ".json", ".yml", ".yaml", ".html", ".vue",
+    ".md", ".mdx", ".markdown", ".txt", ".html", ".css", ".scss",
+    ".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".vue", ".svelte",
+    ".json", ".yml", ".yaml", ".toml",
+    ".py", ".rs", ".go", ".sh", ".sql", ".swift", ".kt",
 }
 
-# Basenames exempt from the emoji rule (e.g. a showcase README).
-ALLOW_EMOJI = set()
-
-HARD = {
+FORBIDDEN = {
     chr(0x2014): "em-dash",
     chr(0x2013): "en-dash",
     chr(0x2012): "figure-dash",
@@ -25,54 +30,51 @@ HARD = {
     chr(0x2022): "bullet",
 }
 
-
 def is_emoji(ch):
-    """Pictographic emojis and flags only, scoped to spare arrows, check marks,
-    and the circled-i tooltip glyph."""
+    """Pictographs and flags only, so arrows, check marks and the circled-i
+    glyph stay allowed."""
     o = ord(ch)
-    return (0x1F000 <= o <= 0x1FAFF) or (0x1F1E6 <= o <= 0x1F1FF) or o == 0xFE0F
+    return 0x1F000 <= o <= 0x1FAFF or o == 0xFE0F
 
 
-def main():
+def problems_in(path):
+    if os.path.splitext(path)[1].lower() not in EXTS or not os.path.isfile(path):
+        return []
+    try:
+        with open(path, encoding="utf-8") as f:
+            lines = f.read().splitlines()
+    except (OSError, UnicodeDecodeError):
+        return []
+    found = []
+    for line_no, line in enumerate(lines, 1):
+        names = [name for ch, name in FORBIDDEN.items() if ch in line]
+        if any(is_emoji(c) for c in line):
+            names.append("emoji")
+        found.extend(f"  {path}:{line_no}: {name}" for name in names)
+    return found
+
+
+def report(problems):
+    print("AI-tells found. Use plain punctuation and no emoji:", file=sys.stderr)
+    print("\n".join(dict.fromkeys(problems)), file=sys.stderr)
+
+
+def main(argv):
+    if argv:
+        problems = [p for path in argv for p in problems_in(path)]
+        if problems:
+            report(problems)
+        return 1 if problems else 0
     try:
         payload = json.load(sys.stdin)
-    except Exception:
+    except (json.JSONDecodeError, ValueError):
         return 0
-
     path = (payload.get("tool_input") or {}).get("file_path")
-    if not path or not os.path.isfile(path):
-        return 0
-    if os.path.splitext(path)[1].lower() not in EXTS:
-        return 0
-
-    try:
-        text = open(path, encoding="utf-8").read()
-    except Exception:
-        return 0
-
-    problems = []
-    allow_emoji = os.path.basename(path) in ALLOW_EMOJI
-    for line_no, line in enumerate(text.splitlines(), 1):
-        for ch, name in HARD.items():
-            if ch in line:
-                problems.append("  {}:{}: {}".format(path, line_no, name))
-        if not allow_emoji and any(is_emoji(c) for c in line):
-            problems.append("  {}:{}: emoji".format(path, line_no))
-
-    if not problems:
-        return 0
-
-    print(
-        "AI-tells found. Remove them: plain punctuation only, no emojis.",
-        file=sys.stderr,
-    )
-    seen = set()
-    for p in problems:
-        if p not in seen:
-            print(p, file=sys.stderr)
-            seen.add(p)
-    return 2
+    problems = problems_in(path) if isinstance(path, str) else []
+    if problems:
+        report(problems)
+    return 2 if problems else 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(sys.argv[1:]))

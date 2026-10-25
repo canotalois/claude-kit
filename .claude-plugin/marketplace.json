@@ -5,7 +5,7 @@
     {
       "name": "claude-kit",
       "source": "./",
-      "description": "Language-agnostic conventions, an AI-tell hook, review/ship/doc-check/kickoff skills, and per-language stacks."
+      "description": "Conventions, a rule catalog with IDs, review and shipping skills, two safety hooks, and strict project starters for Claude Code."
     }
   ]
 }

@@ -1,32 +1,32 @@
 ---
 name: doc-check
-description: Scan every versioned markdown file for AI-tells (em-dash, middot, emojis) and broken internal links, and list docs not covered. Invoke before delivering a repo.
+description: Audit every versioned Markdown file for AI-tells (em-dash, en-dash, middot, emoji), broken relative links, and repository paths cited in prose that do not exist. Report only. Invoke before delivering or publishing a repository's docs.
 ---
 
 # doc-check
 
-Audit the repository's markdown for delivery. Output a short report. Use a script, not eyeballing.
+A delivery gate for documentation. Scripts decide, not eyeballing.
 
 ## Steps
 
-1. List versioned markdown: `git ls-files '*.md' '*.mdx'`. Flag any you did not review this session.
-2. For each file, check for AI-tells: em-dash (U+2014), en-dash (U+2013), middot (U+00B7), bullet (U+2022), pictographic emojis. Report file:line for each hit.
-3. Resolve every relative markdown link (`](./...)`, `](../...)`); report any target that does not exist.
-4. Report file paths cited in prose (`src/...`, `deploy/...`) that do not exist on disk.
+1. List the docs: `git ls-files '*.md' '*.mdx'`.
+2. AI-tells: `python3 scripts/check-ai-tells.py <files>` from this skill's directory. It prints `path:line: kind` for each hit.
+3. Links: for every relative Markdown link `[text](target)` (skip `http`, `mailto:`, and pure `#anchor`), resolve the target against the file's directory, strip any `#anchor`, and check that it exists.
+4. Cited paths: for every backticked token that looks like a repository path (contains `/` or ends in a known extension, no spaces, no `<placeholder>`), check that it exists from the repository root. Skip paths under `~`, absolute paths, and paths inside fenced code blocks that show commands for another repository.
 
 ## Output
 
 ```
-doc-check: <N> markdown files
+doc-check: <N> files
 
 AI-tells:
-  <path>:<line> <what>
+  <path>:<line> <kind>
 Broken links:
   <path> -> <target>
-Not covered:
-  <path>
+Missing cited paths:
+  <path>: `<cited>`
 
-PASS if all three sections are empty.
+PASS
 ```
 
-Report only; do not fix anything unless asked.
+Print `PASS` only when all three sections are empty, and omit empty sections. Do not fix anything unless asked.
