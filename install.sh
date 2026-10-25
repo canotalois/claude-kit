@@ -14,7 +14,10 @@
 set -euo pipefail
 
 REPO="${CLAUDE_KIT_REPO:-https://github.com/canotalois/claude-kit.git}"
-SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || true)"
+SELF_DIR=""
+if [ -n "${BASH_SOURCE[0]:-}" ] && [ -f "${BASH_SOURCE[0]}" ]; then
+  SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+fi
 
 for bin in git python3; do
   command -v "$bin" >/dev/null 2>&1 || { echo "claude-kit needs '$bin' on your PATH." >&2; exit 1; }
