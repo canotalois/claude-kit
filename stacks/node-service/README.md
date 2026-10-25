@@ -1,17 +1,37 @@
-# Node service starter
+# node-service
 
-A backend TypeScript service preset (HTTP API, workers, jobs) wired to the claude-kit conventions. For a React/web app use `node-web` instead.
+A TypeScript backend: HTTP API, worker, or job runner on Node 24. No framework imposed. Verified with TypeScript 6.0, ESLint 9.39, and typescript-eslint 8.72.
 
-## What comes with it
+Source runs directly on Node through type stripping (`node src/index.ts`, `node --test`), so the tsconfig sets `erasableSyntaxOnly` (no enums, namespaces, or parameter properties) and `rewriteRelativeImportExtensions` (imports name the `.ts` file; the build rewrites them to `.js`).
 
-- `GUIDELINES.md`: the "don't" checklist the `/review` skill enforces on a branch, focused on server-side concerns (boundary validation, typed errors and HTTP mapping, transactions, idempotency and concurrency, structured logging without secrets, module boundaries).
+## Files
 
-This stack ships the guidelines only. Its idioms are framework-agnostic (Express, Fastify, NestJS, a queue worker) and pair with whatever config the target repo already has, so no `tsconfig`/CI is imposed here.
+| File | Role |
+| --- | --- |
+| `tsconfig.json` | strict, `NodeNext`, type-stripping compatible |
+| `tsconfig.build.json` | the build, without test files |
+| `eslint.config.mjs` | owns the `lint` rules of `typescript.md`: `strictTypeChecked`, exhaustive switches, exports-map imports, `node:test` calls exempt from the floating-promise rule |
+| `package.json` | scripts and toolchain versions |
+| `.github/workflows/ci.yml` | typecheck, lint, test, build on Node 24 |
 
-## Use it
+## Commands
 
-Copy `guidelines/core.md` and this `GUIDELINES.md` into the repo root (or vendor them), so `/review` and any review automation read both. A domain-specific service adds its own overlay section below the vendored content (for example a payments service adds a ledger-invariant and no-PAN-in-logs section) rather than editing the shared stack.
+- Install: `pnpm install` (commit `pnpm-lock.yaml`)
+- Run: `node src/index.ts`
+- Typecheck: `pnpm typecheck`
+- Lint: `pnpm lint`
+- Test: `pnpm test` (`node --test`, files named `*.test.ts`)
+- Build: `pnpm build` (to `dist/`)
 
-## Conventions
+## Layout
 
-`GUIDELINES.md` plus `guidelines/core.md` are the source of truth. Run `/review` before a PR to check the branch against both.
+- `src/`: source and colocated `*.test.ts` files
+- one module reads the environment and builds a typed config at startup (`cfg-fail-fast`); everything else receives it
+
+## Rules
+
+`core`, `typescript`, `backend`
+
+## Then
+
+- Add the HTTP framework and database driver the service needs, and a request schema on every route (`api-route-schema`).
