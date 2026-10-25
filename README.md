@@ -1,105 +1,74 @@
 # claude-kit
 
-> Beta. I use it daily and it works, but the structure may still shift and there are rough edges. Feedback and issues welcome.
+How I work with Claude Code, packaged so it installs in one command: conventions loaded in every project, a code rule catalog with IDs and exceptions, review and shipping skills, two safety hooks, and strict project starters.
 
-My Claude Code setup: a language-agnostic trunk (conventions, a hook, skills) plus per-language stacks you start from for anything. Install once, get the same standards everywhere, add a stack when you pick up a new language.
+## How I work
 
-## The shape
+I orchestrate; Claude executes. An agent applies whatever it is given literally, so a vague or outdated instruction becomes a bug written in good faith. Everything here follows from that.
+
+- **Instructions are short, concrete, and checkable.** [`CLAUDE.md`](CLAUDE.md) holds only what applies to every project, under 50 lines: output style, a working loop (read before editing, done means verified, report failures as they are, ask only for real decisions), and code principles.
+- **Code rules carry their failure and their exception.** The [catalog](rules/README.md) has 74 rules, each with an ID, a default severity, who enforces it, the failure it prevents, and when it does not apply. A rule without an exception produces false positives until people stop reading the reviewer.
+- **Tools enforce what tools can see.** Each stack ships the ESLint, TypeScript, or Clippy config that owns the mechanical rules; review covers only what no tool catches. Two hooks catch the rest: a guard against catastrophic deletes and force-pushes to `main`, and a check for AI-tells in written files.
+- **Review is a separate pass with its own catalog.** `rules-review` judges a diff against the rules, reads them from the base branch so a change cannot rewrite its own rules, and separates "does it follow the rules" from "does it do what the ticket asked". The built-in `/code-review` hunts bugs alongside it, not instead of it.
+- **Unattended work is bounded.** Hard turn and spend caps, a denied `git push`, a branch to review in the morning ([docs/unattended.md](docs/unattended.md)).
+- **Claims about tools are checked, not remembered.** Rules and configs that cite tool behavior were verified against current documentation and by running the tools; the kit's CI re-runs the stacks' configs on sample code.
+
+## Layout
 
 ```
-claude-kit/
-  CLAUDE.md            # universal behavior, loaded in every project (any language)
-  guidelines/core.md   # the universal "don't" list /review enforces
-  hooks/               # PostToolUse AI-tell blocker + PreToolUse destructive-command guard
-  skills/              # /review, /ship, /doc-check, /kickoff
-  agents/              # reusable subagents: reviewer, ux-auditor, researcher
-  settings/            # a balanced permission posture (autopilot.json) + the safety model
-  autopilot/           # a /loop maintenance task and scheduled-routine recipes
-  stacks/
-    node-web/          # TypeScript frontend overlay + strict tsconfig, CI, gitignore
-    node-service/      # TypeScript backend overlay (API, workers, jobs)
-    rust/              # Rust overlay + workspace lints, CI, gitignore
+CLAUDE.md               conventions loaded in every project
+rules/                  the code rule catalog: core, typescript, react, next, backend, rust
+skills/
+  rules-review/         diff review against the catalog, with paste-ready suggestions
+  ux-review/            whole-repository UX sweep into a backlog
+  ship/                 gate, atomic commits, push
+  doc-check/            AI-tells and broken links in docs
+  kickoff/              start a project from a stack
+hooks/                  destructive-command guard, AI-tell check, and their tests
+settings/               the permission posture
+stacks/                 node-web, node-service, rust: strict configs and CI
+docs/unattended.md      bounded batch and nightly runs, and what they cost
 ```
-
-Two layers, on purpose:
-
-- **Trunk (universal).** `CLAUDE.md`, `guidelines/core.md`, the hook and the skills apply to any language. "No AI-tells, validate at the boundary, throw early, don't reinvent, typed errors, no mid-code comments, atomic commits" hold in Rust as much as in TypeScript.
-- **Stacks (per language).** Each `stacks/<name>/` is a thin overlay: a `GUIDELINES.md` that adds the language's idioms on top of the core, plus its starter config (tsconfig / Cargo, CI, gitignore). Adding a language is one new folder, nothing else moves.
-
-A guideline is written once in the spine and only its *expression* changes per stack:
-
-| Core principle | node-web | rust |
-|---|---|---|
-| Validate at the boundary | zod, then narrow | `serde` into typed structs |
-| Throw early, no stacked fallbacks | no `?? ??` masking | `?`, no `unwrap_or` papering over |
-| One typed error per domain | discriminated union `code` | `enum` + `thiserror` |
-| Strict by default | `strict`, `noUncheckedIndexedAccess` | `clippy::pedantic`, `-D warnings` |
-
-## Three pieces, three roles
-
-If you are new to Claude Code, this is the whole vocabulary:
-
-| | What it is | When it fires | Here |
-|---|---|---|---|
-| **Hook** | a script Claude Code runs automatically on an event | every time, deterministic | block `rm -rf /`, strip AI-tells on write |
-| **Skill** | a procedure you invoke with `/name` | when called | `/review`, `/ship`, `/kickoff` |
-| **Agent** | a specialized sub-Claude with its own context | when delegated a task | `reviewer`, `ux-auditor` |
-
-A hook is a reflex, a skill is a command, an agent is a colleague.
 
 ## Install
 
-Two parts, because Claude Code splits them: the **plugin** carries the tools (skills, agents, hooks); the **installer** carries the conventions and the permission posture (those live in settings, a plugin cannot ship them). Run both for the full kit.
+macOS or Linux, with `git` and `python3`. Read it first: `curl -fsSL https://raw.githubusercontent.com/canotalois/claude-kit/main/install.sh | less`.
 
-Plugin, any OS, inside Claude Code (also the Windows and non-developer path):
+```bash
+curl -fsSL https://raw.githubusercontent.com/canotalois/claude-kit/main/install.sh | bash
+```
+
+It clones the kit to `~/.claude-kit`, links `CLAUDE.md` and the skills into `~/.claude`, then asks before merging the hooks and the permission posture into `~/.claude/settings.json`. Anything it replaces is moved to `~/.claude-kit-backups/<timestamp>/`. Re-run it to update. From a checkout, run `./install.sh`.
+
+Plugin only (skills and hooks; a plugin cannot ship global instructions or permissions):
 
 ```
-/plugin marketplace add github:canotalois/claude-kit
+/plugin marketplace add canotalois/claude-kit
 /plugin install claude-kit@claude-kit
 ```
 
-Conventions and permissions, macOS / Linux (clones the kit, symlinks `CLAUDE.md`, merges the hooks and balanced permissions into `~/.claude` with a backup). Read it first with `| less`:
+Use the installer or the plugin, not both: the skills and hooks would load twice.
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/canotalois/claude-kit/main/bootstrap.sh | bash
-```
-
-## Start a new project
-
-`/kickoff` is a plugin skill, so install the plugin first (above).
-
-```bash
-/kickoff node-web my-app   # scaffolds the stack and a self-contained GUIDELINES.md
-```
-
-No plugin? Pull a stack directly and compose its `GUIDELINES.md` yourself:
-
-```bash
-npx degit canotalois/claude-kit/stacks/node-web my-app
-```
-
-## Autopilot
-
-The point is to delegate the routine and be asked only about genuine decisions. The lever is permissions, not skills. `settings/autopilot.json` is a balanced posture: reads, edits in source trees, and the test/typecheck/lint/build/commit commands auto-run; `git push`, dependency installs, and `curl` prompt; secrets and `sudo` are denied. `rm -rf` and force-push are not blunt-denied; the `PreToolUse` guard (`hooks/gate-destructive.py`) blocks only the catastrophic cases (`rm -rf /`, `~`, `$HOME`, absolute paths, force-push to main) so `rm -rf node_modules` still works.
-
-- **Delegate task classes** to the subagents in `agents/` (reviewer against the guidelines, ux-auditor, researcher) to keep the main context clean.
-- **Recurring work**: `autopilot/loop.md` for a local `/loop` maintenance pass, `autopilot/routines.md` for scheduled cloud routines (daily PR triage, dependency bumps) that open a PR instead of pushing.
-- The safety model is written up in `settings/README.md`. Not for use with `--dangerously-skip-permissions`.
-
-## While you sleep
-
-The payoff of the autopilot layer: launch work before bed, review it with coffee. Two ways.
-
-**Local**, on your machine. Switch to the unattended posture (`settings/unattended.json`: no `ask`, `git push` denied, `askUserQuestionTimeout` set so nothing hangs), turn on auto mode, work on a `claude/overnight` branch, and set a verifiable goal:
+## Start a project
 
 ```
-/goal every task in TODO.md is done with passing tests, and typecheck + test are green
+/kickoff node-web my-app
 ```
 
-It works through the list, commits each task, and logs anything it could not do to `NEEDS-REVIEW.md` instead of waiting. You wake up to a branch to review. Full recipe in `autopilot/overnight.md`.
+It copies the stack's starter files and writes a short project `CLAUDE.md` with the build and test commands. `--vendor-rules` also writes the stack's rules into `GUIDELINES.md`, for a team repository whose reviewers do not have the kit. Without the kit: `npx degit canotalois/claude-kit/stacks/node-web my-app`.
 
-**Cloud**, laptop closed. A scheduled routine runs on Anthropic's infrastructure and opens a pull request. Example, nightly: "take the top item in `BACKLOG.md`, implement it on a `claude/` branch with tests, open a draft PR." You wake up to draft PRs. See `autopilot/routines.md` (needs Pro/Max/Team/Enterprise with Claude Code on the web).
+| Stack | For | Rules |
+| --- | --- | --- |
+| [node-web](stacks/node-web/README.md) | Next.js monorepo with shared packages | core, typescript, react, next |
+| [node-service](stacks/node-service/README.md) | TypeScript API, worker, or job on Node 24 | core, typescript, backend |
+| [rust](stacks/rust/README.md) | Cargo workspace on edition 2024 | core, rust |
 
-## Why
+## Maintaining it
 
-Repetitive manual checks (no em-dash, no filler, no broken links, no forgotten files) are slow and easy to miss. This moves them into hooks and a few skills that run every time, keeps one set of standards across every language, and auto-approves the routine so a human is pulled in only for the irreversible and the outbound.
+- CI runs the hook tests, shellcheck on the installer, the AI-tell check and an offline link check on the docs, and each stack's typecheck, lint, and tests on sample code.
+- `/doctor prompt-audit` checks the instruction files for contradictions and stale references.
+- Versions verified on 2026-10-25: TypeScript 6.0, ESLint 9.39, typescript-eslint 8.72, Next.js 16.4, Node 24, Rust edition 2024. The stack READMEs say why TypeScript 7 and ESLint 10 are not used yet.
+
+## License
+
+[MIT](LICENSE)
